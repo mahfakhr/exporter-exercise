@@ -1,0 +1,30 @@
+{
+  "name": "exporter-challenge",
+  "version": "1.0.0",
+  "description": "A coding challenge for the Heartbeat exporter",
+  "scripts": {
+    "format": "prettier --write .",
+    "start": "babel-node -x \".ts\" src/index.ts"
+  },
+  "author": {
+    "name": "Christian Mellor",
+    "email": "mellor@heartbeat-med.de"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@babel/node": "^7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-typescript": "^7.9.0",
+    "@types/node": "^16.11.11",
+    "@types/redis": "^2.8.32",
+    "@types/redis-mock": "^0.17.0",
+    "redis-mock": "^0.56.3",
+    "prettier": "2.5.0",
+    "typescript": "3.8.3"
+  },
+  "dependencies": {
+    "redis": "^4.0.0"
+  }
+}
