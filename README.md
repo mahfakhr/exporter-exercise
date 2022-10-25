@@ -38,6 +38,57 @@ also add diagrams/code snippets, whatever you think is required ⭐️
    thoughtful consideration of the different elements.
 3. Your approach to documentation.
 
+---
+**System Architecture**
+
+![img.png](architecture.png)
+
+**Description**
+1. Creates redis client using 
+2. Open a mock file by creating a readable stream by calling `mockOpenFile()`
+4. Set and initiate all exporter dependencies which includes:
+```
+cache: RedisClient;
+permissionsService: PermissionsService;
+allowedPermission: string;
+UUIDGen: UUID;
+logger: Logger;
+```
+5. Populate dependencies and trigger start export method using `exporter.StartExport`
+```
+Input => (user: User, data: Stream)
+Output => { status: string; id: string; }
+```
+6. Get export status every 500 milliseconds `exporter.GetExportStatus`
+```
+Input => (id: string)
+Output => { status: string; id: string; }
+```
+**How `StartExport` works:**
+1. Checks the user permissions using 
+   ```
+   CheckPermissions: async (user, permission) =>
+   user.permissions.includes(permission),
+   ```
+2. Sets key (exportId) in redis with the value `{ status: "CREATED", id: exportId, }`
+3. Attach writable stream to readable stream using `data.pipe(newCacheWriter(exportId, deps.cache))`
+4. Create writable stream and write data to cache using `newCacheWriter()`
+   ```
+   Input => (exportId: string, cache: RedisClient)
+   Output => Writable stream
+   ```
+      1. `write()` method of writable stream writes data to stream and chunks will be appended to `{id}-data` key
+         1. set status PENDING until all data is handled
+      2. After all data is handled `final()` executes
+         1. set status to COMPLETE
+         2. set expiry times to the keys
+
+**How `GetExportStatus` works:**
+1. Gets value from cache using key (Id)
+2. If key does not exist throws error else parse the value and returns
+
+---
+
 ### Task 2a 🛠
 
 **Please choose either 2a or 2b!**
