@@ -10,30 +10,34 @@ export type Stringable = string | ToString;
 export type ToString = {
   toString: () => string;
 };
-function fieldsToString(fields?:  { [key: string]: Stringable }) {
+function fieldsToString(fields?: { [key: string]: Stringable }) {
   if (!fields) {
-    return ""
+    return "";
   }
-  let str = ""
+  let str = "";
   for (const k in fields) {
-    str = str + k + ":" + fields[k].toString() + ", "
-  } 
-  return str
+    str = str + k + ":" + fields[k].toString() + ", ";
+  }
+  return str;
 }
 
-export const NewMockLogger = (...tags: Stringable[]) : Logger => {
-  let oldTags: Stringable[] = tags
-  const log: Logger = function(
+export const NewMockLogger = (...tags: Stringable[]): Logger => {
+  let oldTags: Stringable[] = tags;
+  const log: Logger = function (
     message: Stringable,
     fields?: { [key: string]: Stringable },
     ...tags: Stringable[]
-  ){
-    const allTags = [...oldTags, ...tags]
-    console.log(`tags: ${allTags.join("|")}, message: ${message}, fields: ${fieldsToString(fields)}`)
-  }
+  ) {
+    const allTags = [...oldTags, ...tags];
+    console.log(
+      `tags: ${allTags.join(
+        "|"
+      )}, message: ${message}, fields: ${fieldsToString(fields)}`
+    );
+  };
   log.tag = (...tags: Stringable[]) => {
-    oldTags.push(...tags)
-    return log
-  }
-  return log
-}
+    oldTags.push(...tags);
+    return log;
+  };
+  return log;
+};

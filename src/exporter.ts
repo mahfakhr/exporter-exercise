@@ -1,4 +1,4 @@
-import { Writable, Stream } from "stream";
+import { Writable, Stream, Readable } from "stream";
 import { RedisClient } from "redis";
 import { PermissionsService, User } from "./permissions";
 import util from "util";
@@ -8,6 +8,7 @@ import { Logger } from "./logger";
 interface Exporter {
   StartExport: (user: User, data: Stream) => Promise<ExportStatus>;
   GetExportStatus: (id: string) => Promise<ExportStatus>;
+  CancelExport: (user: User, readStream: Readable) => Promise<ExportStatus>;
 }
 
 type ExportStatus = {
@@ -29,7 +30,7 @@ export const HBExporter = (deps: HBExporterDependencies): Exporter => {
   return {
     StartExport: async (user, data) => {
       //Console log the message of tag exporter as this logger initialized with the exporter tag.
-      deps.logger("starting export")
+      deps.logger("starting export");
       try {
         // check permissions of the user using allowed permissions, example user object:
         // myUser = {
@@ -82,12 +83,47 @@ export const HBExporter = (deps: HBExporterDependencies): Exporter => {
       const status: ExportStatus = JSON.parse(strStatus);
       return status;
     },
+    CancelExport: async (user, readStream) => {
+      deps.logger("cancelling export");
+      try {
+        // check if user has permission to cancel the export
+        const allowed = await deps.permissionsService.CheckPermissions(
+          user,
+          deps.allowedPermission
+        );
+        if (!allowed) {
+          throw new Error("incorrect permission");
+        }
+
+        const exportId = deps.UUIDGen.NewUUID();
+        const newStatus = {
+          status: "Cancelled",
+          id: exportId,
+        };
+
+        readStream.destroy();
+
+        // I have added close event specifically to handle the edge case while calling destroy(),
+        // lets say we set the CANCELLED state before calling destroy and there is one chunk in the writable state still appending into the cache
+        // then at the same time stream is destroyed and the status will set to PENDING, with that, CANCELLED status will be overwritten
+        // So instead of setting status before destroy(), setting it after the stream has closed and destroy() emits the 'close' event is safer
+        readStream.on("close", async function () {
+          deps.logger("Stream has been destroyed and file has been closed");
+
+          const set = util.promisify(deps.cache.SET).bind(deps.cache);
+          await set(exportId, JSON.stringify(newStatus));
+        });
+
+        return newStatus;
+      } catch (e) {
+        console.log("error");
+        throw e;
+      }
+    },
   };
 };
 
 function newCacheWriter(exportId: string, cache: RedisClient) {
-  // util.promisify().bind() makes a new promised function which has its 'this' keyword set to the redisClient context
-
   // If key already exists and is a string, this appends the value at the end of the string. If key does not exist it is created and set as an empty string
   const append = util.promisify(cache.APPEND).bind(cache);
   // Set the string value of a key. If key already holds a value, it is overwritten, regardless of its type
