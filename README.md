@@ -21,23 +21,6 @@ of this exercise.
 
 ### Task 1
 
-Complete this README with a description of how the exporter works. You may
-also add diagrams/code snippets, whatever you think is required ⭐️
-
-**Tips**
-
-1.  Read through the various files.
-2.  Map out the high level system
-    architecture and important functionality.
-3.  (optional) Add comments to the `src/exporter.ts` file.
-
-**What we are looking for**
-
-1. Clear explanations of what individual elements are.
-2. Some parts may be confusing, that's ok. We are looking for a
-   thoughtful consideration of the different elements.
-3. Your approach to documentation.
-
 ---
 
 **System Architecture**
@@ -114,19 +97,6 @@ this functionality.
 2. The cancel existing import functionality should ideally **stop** an existing import. So no
    further bytes are piped from data source to the cache.
 3. Bonus points for helpful test coverage on new code.
-
-### Task 2b 🧪
-
-**Please choose either 2a or 2b!**
-
-The engineer who implemented this functionality forgot to add tests. We would like to cover
-this feature with tests. Please add suitable tests for the exporter.
-
-**Tips**
-
-1. We are looking for how you approach testing code - be prepared to answer questions on why
-   certain tests have been added!
-2. Test names should be descriptive and help us understand why you chose to write that test.
 
 ### Task 3 📈
 

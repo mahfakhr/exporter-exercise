@@ -5,7 +5,7 @@ import util from "util";
 import { UUID } from "./uuid";
 import { Logger } from "./logger";
 
-interface Exporter {
+export interface Exporter {
   StartExport: (user: User, data: Stream) => Promise<ExportStatus>;
   GetExportStatus: (id: string) => Promise<ExportStatus>;
   CancelExport: (user: User, readStream: Readable) => Promise<ExportStatus>;
@@ -97,19 +97,19 @@ export const HBExporter = (deps: HBExporterDependencies): Exporter => {
 
         const exportId = deps.UUIDGen.NewUUID();
         const newStatus = {
-          status: "Cancelled",
+          status: "CANCELLED",
           id: exportId,
         };
 
         readStream.destroy();
 
-        // I have added close event specifically to handle the edge case while calling destroy(),
-        // lets say we set the CANCELLED state before calling destroy and there is one chunk in the writable state still appending into the cache
+        // I have added close event specifically to handle the 2 edge cases while calling destroy(),
+        // 1- lets say we set the CANCELLED state before calling destroy and there is one chunk in the writable state still appending into the cache
         // then at the same time stream is destroyed and the status will set to PENDING, with that, CANCELLED status will be overwritten
         // So instead of setting status before destroy(), setting it after the stream has closed and destroy() emits the 'close' event is safer
+        // 2- if someone calls this method after the stream is completed if we set status outside of cache it will override complete status
         readStream.on("close", async function () {
-          deps.logger("Stream has been destroyed and file has been closed");
-
+          deps.logger(`Stream has been destroyed and file has been closed for exportId: ${exportId}`);
           const set = util.promisify(deps.cache.SET).bind(deps.cache);
           await set(exportId, JSON.stringify(newStatus));
         });

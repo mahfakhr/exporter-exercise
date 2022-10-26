@@ -1,5 +1,4 @@
 import { HBExporter, HBExporterDependencies } from "./exporter";
-
 import { createClient } from "redis-mock";
 import { MockUUIDGen } from "./uuid";
 import { MockPermissions } from "./permissions";
@@ -13,7 +12,7 @@ function mockOpenFile() {
   });
 }
 
-function sleep(ms: number) {
+export function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
@@ -45,7 +44,7 @@ async function StartApp() {
     console.log(e);
   }
 
-  // Cancel export functionality, Uncomment for demo
+  // ==>> Cancel export functionality, Uncomment for demo <<==
   // try {
   //   exporter.CancelExport(myUser, openFileReadStream);
   // } catch (e) {
