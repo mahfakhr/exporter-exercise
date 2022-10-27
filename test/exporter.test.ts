@@ -50,8 +50,10 @@ describe("Test export cancellation", () => {
   });
 
   it("Cancel stream successfully and update status CANCELLED to cache", async () => {
-
-    const cancelledExport = await exporter.CancelExport(testUser, testReadStream);
+    const cancelledExport = await exporter.CancelExport(
+      testUser,
+      testReadStream
+    );
     expect(cancelledExport.status).toBe("CANCELLED");
     await sleep(25); // wait for cache to be written as destroy() emitting the close event
 
@@ -60,7 +62,6 @@ describe("Test export cancellation", () => {
   });
 
   it("Do not update CANCELLED status in cache if stream is already completed", async () => {
-
     await exporter.StartExport(testUser, testReadStream);
     await sleep(25); // wait for stream to complete
 
@@ -68,5 +69,4 @@ describe("Test export cancellation", () => {
     const statusInCache = await exporter.GetExportStatus("test");
     expect(statusInCache.status).toBe("COMPLETE");
   });
-
 });

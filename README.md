@@ -66,39 +66,46 @@ Output => { status: string; id: string; }
 **How custom `Logger` works:**
 
 NewMockLogger has a return type `Logger` which actually holds two things:
+
 1. Holds the function which accepts three inputs as specified below and logs
-the custom input. But the important thing to note here it `only logs the tags but does not update them for future logs`. 
+   the custom input. But the important thing to note here it `only logs the tags but does not update them for future logs`.
+
 ```
-(  
+(
    message: Stringable,
     fields?: { [key: string]: Stringable },
     ...tags: Stringable[]
   ): void
-  ```
+```
 
 Example execution/demonstration is below
+
 ```
-deps.logger('........... best',{},"1","2"); 
-//logs: tags: exporter|1|2, message: ........... best, fields: 
+deps.logger('........... best',{},"1","2");
+//logs: tags: exporter|1|2, message: ........... best, fields:
 
 deps.logger('........... best222');
-//logs: tags: exporter, message: ........... best222, fields: 
+//logs: tags: exporter, message: ........... best222, fields:
 
 ```
+
 2. The second important thing is tag key of type
+
 ```
  tag: (...tags: Stringable[]) => Logger;
 ```
+
 the tricky thing here is NewMockLogger maintains the `old tags` which is update and dats is pushed
-into it, and for any future logging these tags will also appears. Example below: 
+into it, and for any future logging these tags will also appear. Example below:
+
 ```
 deps.logger.tag("1","2","3");
 
-deps.logger('........... best',{},"1","2"); 
-//logs: tags: exporter|1|2|3|1|2, message: ........... best, fields:  
+deps.logger('........... best',{},"1","2");
+//logs: tags: exporter|1|2|3|1|2, message: ........... best, fields:
 
 deps.logger('........... best222');
-//logs: tags: exporter|1|2|3, message: ........... best222, fields:  
+//logs: tags: exporter|1|2|3, message: ........... best222, fields:
 ```
 
 ---
@@ -112,29 +119,35 @@ Done.
 ### Task 3 📈
 
 ---
+
 ###Improvements
 **Separation of concerns**
 
 This refers to the fact of assigning separate responsibility to each component, function or class. In
-our service there are multiple occasions where components can be divided into specialized components. 
+our service there are multiple occasions where components can be divided into specialized components.
 We can take the example or `exporterDeps` where each dependency have completely different concern to cater.
 The best part of separation of concern is `Code Reusability` like for example this
+
 ```
 util.promisify(cache.Method).bind(Context)
 ```
-instead of initiating and calling again and again we can define a generic method in a separate 
+
+instead of initiating and calling again and again we can define a generic method in a separate
 redis config file which we will discuss in SRP below.
 
 **Loose coupling**
 
 In my perspective our code have a really high coupling lets take an example of this one single
 line of code
-``` 
+
+```
  const exporter = HBExporter(exporterDeps);
 ```
-If we brake down this line, we can make a proper tree of relationships that shows the 
-tightly coupled `Composition`(if we refer to the definition of composition, which is, objects contained 
+
+If we brake down this line, we can make a proper tree of relationships that shows the
+tightly coupled `Composition`(if we refer to the definition of composition, which is, objects contained
 in another object and cant exists alone). For example
+
 ```
    const exporterDeps: HBExporterDependencies = {
     cache: redisClient,
@@ -146,15 +159,15 @@ in another object and cant exists alone). For example
 ```
 
 As shown in our above architectural diagram Index is the bottleneck for exporter service,
-we can separate these dependencies and can use `Association` or `Aggregation` relation directly 
+we can separate these dependencies and can use `Association` or `Aggregation` relation directly
 with our exporter functionalities.
 
 **Single responsibility principle**
 
-Every class, method, or module should have a single responsibility, it 
-may seem identical to the ‘single responsibility principle’, it’s not. 
+Every class, method, or module should have a single responsibility, it
+may seem identical to the ‘single responsibility principle’, it’s not.
 Single responsibility says that every class or function should have its
-own responsibility. Separation of concerns says that you should break that 
+own responsibility. Separation of concerns says that you should break that
 single responsibility into smaller parts that have each their own responsibility.
 
 so taking all this into account i would prefer to have a separate file/class/module
@@ -165,15 +178,16 @@ the client.
 
 If we look at the `time and space complexity` of this service the operations such as
 below are exhausting it because it is stuck in an infinite loop:
+
 ```
  while (1) {
     await sleep(500);
     const res = await exporter.GetExportStatus(MockUUIDGen.NewUUID());
     console.log(res);
   }
-  
+
   - its better to stop it when stream completed or cancelled
-  
+
   let res;
   do {
      await sleep(500);
@@ -185,10 +199,9 @@ below are exhausting it because it is stuck in an infinite loop:
 
 **Simplicity**
 
-In our service we have used compound function inside an object multiple 
-times which heavily effects readability. So I think we can write it in 
+In our service we have used compound function inside an object multiple
+times which heavily effects readability. So I think we can write it in
 a more simpler and efficient way.
-
 
 ## How to submit
 

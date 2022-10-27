@@ -109,7 +109,9 @@ export const HBExporter = (deps: HBExporterDependencies): Exporter => {
         // So instead of setting status before destroy(), setting it after the stream has closed and destroy() emits the 'close' event is safer
         // 2- if someone calls this method after the stream is completed if we set status outside of cache it will override complete status
         readStream.on("close", async function () {
-          deps.logger(`Stream has been destroyed and file has been closed for exportId: ${exportId}`);
+          deps.logger(
+            `Stream has been destroyed and file has been closed for exportId: ${exportId}`
+          );
           const set = util.promisify(deps.cache.SET).bind(deps.cache);
           await set(exportId, JSON.stringify(newStatus));
         });
