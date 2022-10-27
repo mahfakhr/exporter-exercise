@@ -37,8 +37,6 @@ async function StartApp() {
   const openFileReadStream = mockOpenFile();
 
   try {
-    // as it is async method but we are not using await here because otherwise GetExportStatus functionality does not
-    // serve the purpose it is very cleverly running asynchronously in the background while we check the status via cache
     exporter.StartExport(myUser, openFileReadStream);
   } catch (e) {
     console.log(e);
