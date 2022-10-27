@@ -1,22 +1,5 @@
 # Heartbeat engineering challenge
 
-> 🚨 Please create a private fork of this repository and make all PRs into your own repository
-
-Thank you for taking part in this and we are excited to see your work!
-
-This repository contains a slimmed down version of an _exporter_ and associated
-constructs for mocking functionality. There are three
-tasks to complete.
-
-The following files are simple mocks and need not be edited for the purpose
-of this exercise.
-
-```
-1. src/logger.ts
-2. src/permissions.ts
-3. src/uuid.ts
-```
-
 ## Tasks
 
 ### Task 1
@@ -80,33 +63,132 @@ Output => { status: string; id: string; }
 1. Gets value from cache using key (Id)
 2. If key does not exist throws error else parse the value and returns
 
+**How custom `Logger` works:**
+
+NewMockLogger has a return type `Logger` which actually holds two things:
+1. Holds the function which accepts three inputs as specified below and logs
+the custom input. But the important thing to note here it `only logs the tags but does not update them for future logs`. 
+```
+(  
+   message: Stringable,
+    fields?: { [key: string]: Stringable },
+    ...tags: Stringable[]
+  ): void
+  ```
+
+Example execution/demonstration is below
+```
+deps.logger('........... best',{},"1","2"); 
+//logs: tags: exporter|1|2, message: ........... best, fields: 
+
+deps.logger('........... best222');
+//logs: tags: exporter, message: ........... best222, fields: 
+
+```
+2. The second important thing is tag key of type
+```
+ tag: (...tags: Stringable[]) => Logger;
+```
+the tricky thing here is NewMockLogger maintains the `old tags` which is update and dats is pushed
+into it, and for any future logging these tags will also appears. Example below: 
+```
+deps.logger.tag("1","2","3");
+
+deps.logger('........... best',{},"1","2"); 
+//logs: tags: exporter|1|2|3|1|2, message: ........... best, fields:  
+
+deps.logger('........... best222');
+//logs: tags: exporter|1|2|3, message: ........... best222, fields:  
+```
+
 ---
 
 ### Task 2a 🛠
 
-**Please choose either 2a or 2b!**
+---
 
-We need new functionality adding. In addition to starting and fetching the
-status of exports. **We would also like to cancel currently running exports**. Please implement
-this functionality.
-
-**Tips**
-
-1. _We are looking for a minimum working example_, try focus on getting to something working.
-   We can talk through your design and architecture decisions during the next interview.
-2. The cancel existing import functionality should ideally **stop** an existing import. So no
-   further bytes are piped from data source to the cache.
-3. Bonus points for helpful test coverage on new code.
+Done.
 
 ### Task 3 📈
 
-What would you improve? We know this feature isn't great. What would you change?
+---
+###Improvements
+**Separation of concerns**
 
-**Tips**
+This refers to the fact of assigning separate responsibility to each component, function or class. In
+our service there are multiple occasions where components can be divided into specialized components. 
+We can take the example or `exporterDeps` where each dependency have completely different concern to cater.
+The best part of separation of concern is `Code Reusability` like for example this
+```
+util.promisify(cache.Method).bind(Context)
+```
+instead of initiating and calling again and again we can define a generic method in a separate 
+redis config file which we will discuss in SRP below.
 
-1. We are looking for ideas such as patterns, principles and performance.
-2. You don't need to implement any improvements, but feel free to use code
-   examples where you feel it would be helpful.
+**Loose coupling**
+
+In my perspective our code have a really high coupling lets take an example of this one single
+line of code
+``` 
+ const exporter = HBExporter(exporterDeps);
+```
+If we brake down this line, we can make a proper tree of relationships that shows the 
+tightly coupled `Composition`(if we refer to the definition of composition, which is, objects contained 
+in another object and cant exists alone). For example
+```
+   const exporterDeps: HBExporterDependencies = {
+    cache: redisClient,
+    UUIDGen: MockUUIDGen,
+    allowedPermission: "exporter",
+    permissionsService: MockPermissions,
+    logger: NewMockLogger("exporter"),
+  };
+```
+
+As shown in our above architectural diagram Index is the bottleneck for exporter service,
+we can separate these dependencies and can use `Association` or `Aggregation` relation directly 
+with our exporter functionalities.
+
+**Single responsibility principle**
+
+Every class, method, or module should have a single responsibility, it 
+may seem identical to the ‘single responsibility principle’, it’s not. 
+Single responsibility says that every class or function should have its
+own responsibility. Separation of concerns says that you should break that 
+single responsibility into smaller parts that have each their own responsibility.
+
+so taking all this into account i would prefer to have a separate file/class/module
+of a Redis configuration which provides all this generic methods to call and initiates
+the client.
+
+**Performance**
+
+If we look at the `time and space complexity` of this service the operations such as
+below are exhausting it because it is stuck in an infinite loop:
+```
+ while (1) {
+    await sleep(500);
+    const res = await exporter.GetExportStatus(MockUUIDGen.NewUUID());
+    console.log(res);
+  }
+  
+  - its better to stop it when stream completed or cancelled
+  
+  let res;
+  do {
+     await sleep(500);
+     res = await exporter.GetExportStatus(MockUUIDGen.NewUUID());
+     console.log(res);
+  } while(res.status !== "COMPLETED" || res.status !== "CANCELLED" )
+
+```
+
+**Simplicity**
+
+In our service we have used compound function inside an object multiple 
+times which heavily effects readability. So I think we can write it in 
+a more simpler and efficient way.
+
 
 ## How to submit
 
