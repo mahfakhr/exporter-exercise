@@ -5,6 +5,7 @@ import { MockUUIDGen } from "./uuid";
 import { MockPermissions } from "./permissions";
 import { createReadStream } from "fs";
 import { NewMockLogger } from "./logger";
+import { log } from "util";
 
 function mockOpenFile() {
   return createReadStream("myexport.txt", {
@@ -36,16 +37,28 @@ async function StartApp() {
 
   const exporter = HBExporter(exporterDeps);
 
+  let stream = mockOpenFile();
   try {
-    exporter.StartExport(myUser, mockOpenFile());
+    console.log(exporter.StartExport(myUser, stream));
   } catch (e) {
     console.log(e);
   }
-
-  while (1) {
-    await sleep(500);
-    const res = await exporter.GetExportStatus(MockUUIDGen.NewUUID())
-    console.log(res)
+  let i = 0;
+  while (true) {
+    await sleep(10);
+    const res = await exporter.GetExportStatus(MockUUIDGen.NewUUID());
+    console.log(res);
+    redisClient.get("AAAA", (err, rep) => {
+      console.log(rep);
+    });
+    redisClient.get("AAAA-data", (err, rep) => {
+      console.log(rep?.length);
+    });
+    if (i == 3) {
+      await exporter.CancelExport(myUser, "AAAA", stream);
+    }
+    i++;
+    if (res.status === "COMPLETE" || res.status === "CANCELED") break;
   }
 }
 

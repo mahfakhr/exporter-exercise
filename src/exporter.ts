@@ -36,6 +36,9 @@ export type HBExporterDependencies = {
 export const HBExporter = (deps: HBExporterDependencies): Exporter => {
   const get = util.promisify(deps.cache.GET).bind(deps.cache);
   const set = util.promisify(deps.cache.SET).bind(deps.cache);
+  const del = util.promisify(deps.cache.DEL).bind(deps.cache) as (
+    key: string
+  ) => Promise<number>;
   return {
     /**
      * start to export a file to redis cache.
@@ -102,18 +105,17 @@ export const HBExporter = (deps: HBExporterDependencies): Exporter => {
         if (!allowed) throw new Error(`access denied`);
 
         const exportStatus = await this.GetExportStatus(exportId);
-        if (exportStatus.status) {
+        if (exportStatus.status === "COMPLETE") {
           throw new Error(`Export process is ${exportStatus.status}`);
         }
         const newStatus = {
           status: "CANCELED",
           id: exportId,
         };
-        const del = util.promisify(deps.cache.DEL).bind(deps.cache) as (
-          key: string
-        ) => Promise<number>;
+        dataStream.unpipe();
+        dataStream.close();
         await del(exportId);
-        dataStream.destroy();
+        await del(exportId + "-data");
         return newStatus;
       } catch (e) {
         throw e;
@@ -133,7 +135,7 @@ function newCacheWriter(exportId: string, cache: RedisClient) {
   const append = util.promisify(cache.APPEND).bind(cache);
   const set = util.promisify(cache.SET).bind(cache);
   const expire = util.promisify(cache.EXPIRE).bind(cache);
-  return new Writable({
+  const writable = new Writable({
     async write(chunk, _, callback) {
       await append(exportId + "-data", chunk.toString("binary"));
       await set(exportId, JSON.stringify({ status: "PENDING", id: exportId }));
@@ -146,4 +148,8 @@ function newCacheWriter(exportId: string, cache: RedisClient) {
       callback();
     },
   });
+  writable.on("unpipe", (src) => {
+    writable.end();
+  });
+  return writable;
 }

@@ -13,6 +13,7 @@
 ## system description
 
 1. app start by (yarn start or npm start)
+
 ### index
 
 2. redis client initiate and HBExporterDependencies created base on redisclient, generated UUID and permission and also logger :
@@ -38,6 +39,7 @@
 4. exporter will be create by exporterDeps and StartExport will start working by myUser and file content which is streamed by mockOpenFile()
 
 ### exporter
+
 ### StartExport(user,data)
 
 - 4.1. logger log the string "starting export"
@@ -62,30 +64,34 @@
 
 ### logger
 
-includes types: 
-```Logger``` , ```Stringable```,```ToString``` types 
+includes types:
+`Logger` , `Stringable`,`ToString` types
 
-```NewMockLogger``` public function
-- to return a mocked log 
+`NewMockLogger` public function
 
-```fieldsToString``` function
- - to stringify optional field if its passed on it
+- to return a mocked log
+
+`fieldsToString` function
+
+- to stringify optional field if its passed on it
 
 ### permissions
+
 includes:
 
-public interface: ```PermissionsService``` 
+public interface: `PermissionsService`
 
-public type: ```User```
- 
-public function ```MockPermissions``` that check permission based on permissions that passed user has
+public type: `User`
+
+public function `MockPermissions` that check permission based on permissions that passed user has
 
 ###
-includes: 
- 
-public interface: ```UUID```
 
-public function: ```MockUUIDGen``` returns generated('AAAA') UUID :D
+includes:
+
+public interface: `UUID`
+
+public function: `MockUUIDGen` returns generated('AAAA') UUID :D
 
 ---
 
@@ -95,5 +101,5 @@ What would you improve? We know this feature isn't great. What would you change?
 
 1. we can have essentials or utils for some works like mockOpenFile, and sleep etc.
 2. I think having a controller will make the structure more SOLID because it is not exporter's duty to check the user permissions, before this it can be checked in controller.
-3. being more modular(permission, log, exporter) with their own services and controllers will help this structure  
-4. if I had time to check the ability of IO block vs await form of data streaming and binding in redis ,I  think we can improve it better
+3. being more modular(permission, log, exporter) with their own services and controllers will help this structure
+4. store writable and readable somewhere to prevent it from passing to cancellation process
