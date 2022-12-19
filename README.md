@@ -1,103 +1,105 @@
 # Heartbeat engineering challenge
 
-> 🚨 Please create a private fork of this repository and make all PRs into your own repository
+## Task1
 
-Thank you for taking part in this and we are excited to see your work!
+---
 
-This repository contains a slimmed down version of an _exporter_ and associated
-constructs for mocking functionality. There are three
-tasks to complete.
+### software design
 
-The following files are simple mocks and need not be edited for the purpose
-of this exercise.
+<img src="./assets/systemDesign.png" alt="brief design" />
+
+---
+
+## system description
+
+1. app start by (yarn start or npm start)
+
+### index
+
+2. redis client initiate and HBExporterDependencies created base on redisclient, generated UUID and permission and also logger :
+
+```{
+    cache: redisClient,
+    UUIDGen: MockUUIDGen,
+    allowedPermission: "",
+    permissionsService: permissions,
+    logger: loggedInfo,
+  }
+```
+
+3. user create by id and permission list:
 
 ```
-1. src/logger.ts
-2. src/permissions.ts
-3. src/uuid.ts
+{
+    id: "number",
+    permissions: [],
+}
 ```
 
-## Tasks
+4. exporter will be create by exporterDeps and StartExport will start working by myUser and file content which is streamed by mockOpenFile()
 
-### Task 1
+### exporter
 
-Complete this README with a description of how the exporter works. You may
-also add diagrams/code snippets, whatever you think is required ⭐️
+### StartExport(user,data)
 
-**Tips**
+- 4.1. logger log the string "starting export"
 
-1.  Read through the various files.
-2.  Map out the high level system
-    architecture and important functionality.
-3.  (optional) Add comments to the `src/exporter.ts` file.
+- 4.2 permission check using PermissionsService 's CheckPermissions using userinfo and permissions and if not allowed error "incorrect permission" will be thrown
 
-**What we are looking for**
+* 4.3. redis exportId key's value will be set
 
-1. Clear explanations of what individual elements are.
-2. Some parts may be confusing, that's ok. We are looking for a
-   thoughtful consideration of the different elements.
-3. Your approach to documentation.
+```
+{
+          status: "CREATED",
+          id: generatedNewUUID,
+}
+```
 
-### Task 2a 🛠
+4.4 write and attach data to stream using function newCacheWriter(exportId,cache):
 
-**Please choose either 2a or 2b!**
+- 4.4.1: unitl data is available data will be written chunk by chunk to exportedId by passing pending status
+- 4.4.2 by finalizing data status COMPLETE will return and 3600 expire time will be set for exportedId key
 
-We need new functionality adding. In addition to starting and fetching the
-status of exports. **We would also like to cancel currently running exports**. Please implement
-this functionality.
+5. while app is run every 500 ms GetExportStatus(id) check the status of export and will get the status based on exportId key of redis cache data
 
-**Tips**
+### logger
 
-1. _We are looking for a minimum working example_, try focus on getting to something working.
-   We can talk through your design and architecture decisions during the next interview.
-2. The cancel existing import functionality should ideally **stop** an existing import. So no
-   further bytes are piped from data source to the cache.
-4. Bonus points for helpful test coverage on new code.
+includes types:
+`Logger` , `Stringable`,`ToString` types
 
-### Task 2b 🧪
+`NewMockLogger` public function
 
-**Please choose either 2a or 2b!**
+- to return a mocked log
 
-The engineer who implemented this functionality forgot to add tests. We would like to cover
-this feature with tests. Please add suitable tests for the exporter.
+`fieldsToString` function
 
-**Tips**
+- to stringify optional field if its passed on it
 
-1. We are looking for how you approach testing code - be prepared to answer questions on why
-   certain tests have been added!
-2. Test names should be descriptive and help us understand why you chose to write that test.
+### permissions
 
-### Task 3 📈
+includes:
+
+public interface: `PermissionsService`
+
+public type: `User`
+
+public function `MockPermissions` that check permission based on permissions that passed user has
+
+###
+
+includes:
+
+public interface: `UUID`
+
+public function: `MockUUIDGen` returns generated('AAAA') UUID :D
+
+---
+
+# Task 3
 
 What would you improve? We know this feature isn't great. What would you change?
 
-**Tips**
-
-1. We are looking for ideas such as patterns, principles and performance.
-2. You don't need to implement any improvements, but feel free to use code
-   examples where you feel it would be helpful.
-
-## How to submit
-
-1. Create a private fork of this repository
-2. Create a new branch in your fork
-3. Commit on that branch
-4. When you are ready to submit, create a PR back to your fork
-5. Add the user @heartbeat-med (https://github.com/heartbeat-med)
-6. We will comment on the PR
-7. You can either submit more code or we can discuss in the next interview 🤘
-8. Any questions, reach out to us!
-
-## Start the application
-
-Run the example with:
-
-```shell
-yarn start
-```
-
-Format code:
-
-```shell
-yarn format
-```
+1. we can have essentials or utils for some works like mockOpenFile, and sleep etc.
+2. I think having a controller will make the structure more SOLID because it is not exporter's duty to check the user permissions, before this it can be checked in controller.
+3. being more modular(permission, log, exporter) with their own services and controllers will help this structure
+4. store writable and readable somewhere to prevent it from passing to cancellation process
